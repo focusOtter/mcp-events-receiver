@@ -25,7 +25,13 @@ export function listenerClient() {
   const value = process.env.DATABASE_URL_UNPOOLED;
   if (!value || new URL(value).hostname.includes('-pooler.')) throw new Error('DATABASE_URL_UNPOOLED must be a direct Neon URL');
   neonConfig.webSocketConstructor = WebSocket;
-  return new Client({ connectionString: value, connectionTimeoutMillis: 10000 });
+  return new Client({ connectionString: value, connectionTimeoutMillis: 10000, application_name: 'receiver_stream' });
+}
+
+export async function streamCapacityAvailable(sql = db()) {
+  const [row] = await sql`SELECT count(*)::int AS count FROM pg_stat_activity
+    WHERE application_name = 'receiver_stream' AND datname = current_database()`;
+  return row.count < 20;
 }
 
 export async function readChanges(after: string, sql = db()) {

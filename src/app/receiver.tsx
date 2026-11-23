@@ -3,8 +3,8 @@
 import { useActionState, useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { Feed } from '@/lib/feed-types';
-import type { FeedMessage } from '@/lib/stream';
 import { applyFeedMessage } from '@/lib/feed-updates';
+import { connectFeed } from '@/lib/feed-connection';
 import { subscriptionAction } from './actions';
 
 function Signal({ className = '' }: { className?: string }) {
@@ -22,17 +22,13 @@ export function Receiver({ initial, initialError = '' }: { initial: Feed; initia
   const [connected, setConnected] = useState(false);
   const [state, action, pending] = useActionState(subscriptionAction, {});
   useEffect(() => {
-    const source = new EventSource('/api/stream');
-    source.onopen = () => { setConnected(true); setError(''); };
-    source.onmessage = event => {
-      const message: FeedMessage = JSON.parse(event.data);
-      setFeed(current => applyFeedMessage(current, message));
-    };
-    source.onerror = () => {
-      setConnected(false);
-      setError('Connection interrupted. Your events are safe; reconnecting…');
-    };
-    return () => source.close();
+    return connectFeed(
+      message => setFeed(current => applyFeedMessage(current, message)),
+      connected => {
+        setConnected(connected);
+        setError(connected ? '' : 'Connection interrupted. Your events are safe; reconnecting…');
+      },
+    );
   }, []);
   const active = feed.subscriptions.filter(s => s.status === 'active' && (!s.refreshBefore || Date.parse(s.refreshBefore) > feed.asOf)).length;
   return <>

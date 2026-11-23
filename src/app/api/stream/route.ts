@@ -1,4 +1,4 @@
-import { openFeedStream, resumeCursor } from '../../../lib/stream';
+import { openFeedStream, resumeCursor, streamCapacityAvailable } from '../../../lib/stream';
 
 export const maxDuration = 60;
 
@@ -7,6 +7,7 @@ export async function GET(request: Request) {
   try { cursor = resumeCursor(request); }
   catch { return new Response('Invalid stream cursor', { status: 400 }); }
   try {
+    if (!await streamCapacityAvailable()) return new Response('Stream capacity reached', { status: 503, headers: { 'Retry-After': '5', 'Cache-Control': 'no-store' } });
     return new Response(openFeedStream(request, cursor), {
       headers: {
         'Content-Type': 'text/event-stream; charset=utf-8',

@@ -4,7 +4,7 @@ import type { Client } from '@neondatabase/serverless';
 const mocks = vi.hoisted(() => ({ sql: vi.fn(), feed: vi.fn() }));
 vi.mock('./db', () => ({ db: () => mocks.sql, serverUrl: () => 'https://sender.example/api/mcp' }));
 vi.mock('./events', () => ({ readFeed: mocks.feed }));
-import { formatMessage, listenerClient, loadChange, openFeedStream, readChanges, resumeCursor } from './stream';
+import { formatMessage, listenerClient, loadChange, openFeedStream, readChanges, resumeCursor, streamCapacityAvailable } from './stream';
 import { applyFeedMessage } from './feed-updates';
 import type { Feed, ReceivedEvent } from './feed-types';
 
@@ -55,6 +55,14 @@ it('requires an explicitly unpooled connection URL', () => {
   expect(listenerClient).toThrow('DATABASE_URL_UNPOOLED');
   vi.stubEnv('DATABASE_URL_UNPOOLED', 'postgresql://user:pass@ep-test-pooler.example.neon.tech/receiver');
   expect(listenerClient).toThrow('direct Neon URL');
+  vi.stubEnv('DATABASE_URL_UNPOOLED', 'postgresql://user:pass@ep-test.example.neon.tech/receiver');
+  const connection = listenerClient();
+  expect(connection).toHaveProperty('connectionParameters.application_name', 'receiver_stream');
+});
+it.each([0, 19, 20, 21])('checks the named session cap through the pooled query path at %s sessions', async count => {
+  mocks.sql.mockResolvedValueOnce([{ count }]);
+  expect(await streamCapacityAvailable()).toBe(count < 20);
+  expect(mocks.sql.mock.calls[0][0].join('')).toContain("application_name = 'receiver_stream' AND datname = current_database()");
 });
 it('LISTENs before catch-up, sends ordered IDs, drains notifications, pings and releases on abort', async () => {
   const connection = client();
