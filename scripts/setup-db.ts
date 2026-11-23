@@ -1,5 +1,6 @@
 import nextEnv from '@next/env';
 import { db } from '../src/lib/db';
+import { setupFeedStream } from '../src/lib/feed-schema';
 nextEnv.loadEnvConfig(process.cwd());
 const sql = db();
 await sql.transaction([
@@ -16,4 +17,5 @@ await sql.transaction([
   sql`CREATE TABLE IF NOT EXISTS subscription_control (
     scope text PRIMARY KEY, owner uuid NOT NULL, locked_until timestamptz NOT NULL)`,
 ]);
+await setupFeedStream(sql);
 console.log('Receiver schema ready (idempotent).');

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-labelledby="architecture-title architecture-desc" id="architecture-root">
 <title id="architecture-title">Otter Paws MCP Events architecture</title>
-<desc id="architecture-desc">A browser books grooming appointments; the booking server verifies subscriptions and signs webhooks for a durable receiver, whose feed polls Neon and adds optional AI Gateway summaries after persistence.</desc>
+<desc id="architecture-desc">A browser books grooming appointments; the booking server verifies subscriptions and signs webhooks for a durable receiver. Neon LISTEN/NOTIFY pushes committed changes through an SSE stream to the feed, with optional AI Gateway summaries after persistence.</desc>
 <defs>
       <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;family=Noto+Serif:ital@0;1&amp;family=Noto+Sans+KR:wght@400;500;600&amp;family=Noto+Serif+KR:wght@400&amp;family=Noto+Sans+TC:wght@400;500;600&amp;family=Noto+Serif+TC:wght@400&amp;display=swap');
       #architecture-root { color: #263e34; }
@@ -46,7 +46,7 @@
 <rect x="884" y="420" width="104" height="24" fill="#fbfaf4"/>
 <text x="892" y="437" class="mono">dedupe by ID</text>
 <rect x="1056" y="472" width="176" height="24" fill="#fbfaf4"/>
-<text x="1144" y="489" text-anchor="middle" class="mono">poll every 1.5s</text>
+<text x="1144" y="489" text-anchor="middle" class="mono">LISTEN → SSE</text>
 <rect x="48" y="280" width="192" height="112" rx="8" class="node"/>
 <text x="72" y="316" class="name">Browser</text>
 <text x="72" y="344" class="body">Book or cancel</text>
@@ -68,7 +68,7 @@
 <rect x="1056" y="280" width="176" height="112" rx="8" class="node"/>
 <text x="1080" y="316" class="name">Live feed</text>
 <text x="1080" y="344" class="body">JSON + AI notes</text>
-<text x="1080" y="368" class="mono">GET /api/feed</text>
+<text x="1080" y="368" class="mono">GET /api/stream</text>
 <rect x="1056" y="548" width="176" height="84" rx="8" class="node" stroke-dasharray="5 4"/>
 <text x="1072" y="580" class="name">AI Gateway</text>
 <text x="1072" y="608" class="mono">after() → summary</text>
