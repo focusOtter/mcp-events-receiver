@@ -84,6 +84,20 @@ it('LISTENs before catch-up, sends ordered IDs, drains notifications, pings and 
   expect((await reader.read()).done).toBe(true);
   expect(connection.end).toHaveBeenCalledOnce();
 });
+it.each(['deadline', 'error', 'abort'])('sends rollover only for a ready stream reaching its planned deadline, not %s failure', async mode => {
+  const connection = client();
+  const abort = new AbortController();
+  const reader = openFeedStream(new Request('https://receiver/api/stream', { signal: abort.signal }), '42', connection as unknown as Client, 500).getReader();
+  await reader.read();
+  await reader.read();
+  await vi.advanceTimersByTimeAsync(0);
+  if (mode === 'deadline') await vi.advanceTimersByTimeAsync(500);
+  if (mode === 'error') connection.emit('error', new Error('Disconnected'));
+  if (mode === 'abort') abort.abort();
+  if (mode === 'deadline') expect(new TextDecoder().decode((await reader.read()).value)).toBe('event: rollover\ndata: {}\n\n');
+  expect((await reader.read()).done).toBe(true);
+  expect(connection.end).toHaveBeenCalledOnce();
+});
 it('closes before the function deadline, on listener failure, cancellation and early abort', async () => {
   for (const mode of ['deadline', 'error', 'cancel', 'abort'] as const) {
     const connection = client();

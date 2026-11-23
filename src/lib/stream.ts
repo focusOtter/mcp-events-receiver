@@ -97,7 +97,10 @@ export function openFeedStream(request: Request, after: string, client = listene
       client.on('error', finish);
       client.on('end', finish);
       request.signal.addEventListener('abort', finish, { once: true });
-      const deadline = setTimeout(finish, lifetime);
+      const deadline = setTimeout(() => {
+        if (ready) send('event: rollover\ndata: {}\n\n');
+        finish();
+      }, lifetime);
       if (request.signal.aborted) { finish(); return; }
       void (async () => {
         try {
