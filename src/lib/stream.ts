@@ -100,7 +100,11 @@ export function openFeedStream(request: Request, after: string, client = listene
           await client.query('LISTEN receiver_feed');
           if (closed) return;
           send('retry: 1000\n\n');
-          send(formatMessage({ kind: 'snapshot', feed: await readFeed() as Feed }));
+          if (after === '0') {
+            const [head] = await db()`SELECT COALESCE(MAX(cursor), 0)::text AS cursor FROM receiver_feed_changes`;
+            cursor = head.cursor;
+          }
+          send(formatMessage({ kind: 'snapshot', feed: await readFeed() as Feed }, after === '0' ? cursor : undefined));
           if (closed) return;
           heartbeat = setInterval(() => send(': ping\n\n'), 25000);
           ready = true;

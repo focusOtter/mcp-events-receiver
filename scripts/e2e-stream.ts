@@ -43,7 +43,7 @@ async function consume(response: Response) {
   assert.equal(response.status, 200);
   assert.match(response.headers.get('content-type') ?? '', /text\/event-stream/);
   let buffer = '';
-  let last = '0';
+  let last: string | undefined;
   for await (const chunk of chunks(response)) {
     buffer += chunk;
     let end: number;
@@ -52,8 +52,10 @@ async function consume(response: Response) {
       const data = frame.split('\n').find(line => line.startsWith('data: '));
       if (!data) continue;
       const cursor = frame.split('\n').find(line => line.startsWith('id: '))?.slice(4);
-      if (cursor) { assert(BigInt(cursor) > BigInt(last), 'SSE IDs must increase'); last = cursor; }
-      arrivals.push({ message: JSON.parse(data.slice(6)), at: Date.now(), cursor: last });
+      if (cursor) { if (last !== undefined) assert(BigInt(cursor) > BigInt(last), 'SSE IDs must increase'); last = cursor; }
+      const message: FeedMessage = JSON.parse(data.slice(6));
+      if (message.kind === 'snapshot') assert(cursor !== undefined, 'Fresh snapshot must carry the journal head as its SSE ID');
+      arrivals.push({ message, at: Date.now(), cursor: last ?? '0' });
       wake?.();
     }
   }

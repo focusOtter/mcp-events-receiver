@@ -13,7 +13,7 @@ const event: ReceivedEvent = { eventId: 'evt-1', name: 'appointment.booked', dat
 function client() {
   return Object.assign(new EventEmitter(), { connect: vi.fn().mockResolvedValue(undefined), query: vi.fn().mockResolvedValue({ rows: [] }), end: vi.fn().mockResolvedValue(undefined) });
 }
-beforeEach(() => { vi.useFakeTimers(); mocks.sql.mockReset().mockResolvedValue([]); mocks.feed.mockReset().mockResolvedValue(feed); });
+beforeEach(() => { vi.useFakeTimers(); mocks.sql.mockReset().mockImplementation((query: TemplateStringsArray) => Promise.resolve(query.join('').includes('MAX(cursor)') ? [{ cursor: '0' }] : [])); mocks.feed.mockReset().mockResolvedValue(feed); });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs(); });
 
 it('honors Last-Event-ID over after, preserves bigint precision and rejects invalid cursors', () => {
@@ -106,5 +106,37 @@ it('does not miss a notification arriving during catch-up and closes on a catch-
   connection.emit('notification');
   await vi.advanceTimersByTimeAsync(0);
   expect((await reader.read()).done).toBe(true);
+  expect(connection.end).toHaveBeenCalledOnce();
+});
+it.each(['0', '9007199254740993'])('starts a fresh stream at journal head %s before the snapshot and catches concurrent writes without replay', async head => {
+  const connection = client();
+  const next = (BigInt(head) + BigInt(1)).toString();
+  let releaseSnapshot!: (value: Feed) => void;
+  mocks.sql.mockResolvedValueOnce([{ cursor: head }])
+    .mockResolvedValueOnce([{ cursor: next, kind: 'event', entity_id: event.eventId }])
+    .mockResolvedValueOnce([event]).mockResolvedValueOnce([{ total: 1 }]);
+  mocks.feed.mockImplementationOnce(() => {
+    expect(connection.query).toHaveBeenCalledWith('LISTEN receiver_feed');
+    expect(mocks.sql).toHaveBeenCalledOnce();
+    expect(mocks.sql.mock.calls[0][0].join('')).toContain('COALESCE(MAX(cursor), 0)::text');
+    return new Promise(resolve => { releaseSnapshot = resolve; });
+  });
+  const reader = openFeedStream(new Request('https://receiver/api/stream'), '0', connection as unknown as Client).getReader();
+  await reader.read();
+  await vi.advanceTimersByTimeAsync(0);
+  connection.emit('notification');
+  releaseSnapshot(feed);
+  expect(new TextDecoder().decode((await reader.read()).value)).toBe(formatMessage({ kind: 'snapshot', feed }, head));
+  expect(new TextDecoder().decode((await reader.read()).value)).toContain(`id: ${next}\n`);
+  expect(mocks.sql.mock.calls[1].slice(1)[0]).toBe(head);
+  await reader.cancel();
+});
+it('closes a fresh stream without sending a snapshot if the journal head cannot be read', async () => {
+  const connection = client();
+  mocks.sql.mockRejectedValueOnce(new Error('DB offline'));
+  const reader = openFeedStream(new Request('https://receiver/api/stream'), '0', connection as unknown as Client).getReader();
+  await reader.read();
+  expect((await reader.read()).done).toBe(true);
+  expect(mocks.feed).not.toHaveBeenCalled();
   expect(connection.end).toHaveBeenCalledOnce();
 });
