@@ -13,8 +13,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://mcp-events-receiver-two.vercel.app"),
   title: "Otter Paws — MCP Events listening room",
   description: "A live feed of signed grooming appointment events, with friendly AI summaries.",
+  openGraph: {
+    type: "website",
+    url: "/",
+    title: "Otter Paws — MCP Events listening room",
+    description: "Signed on departure. Verified on arrival. A live MCP Events feed with AI Gateway summaries.",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Otter Paws listening room — a verified booking event with an AI summary" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Otter Paws — MCP Events listening room",
+    description: "A live MCP Events feed with friendly AI Gateway summaries.",
+    images: [{ url: "/og.png", alt: "Otter Paws listening room — a verified booking event with an AI summary" }],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
