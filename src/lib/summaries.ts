@@ -4,7 +4,7 @@ import { db } from './db';
 
 export async function summarizeEvent(event: Experimental_MCPEvent) {
   const sql = db();
-  if (!process.env.AI_GATEWAY_API_KEY && !process.env.VERCEL_OIDC_TOKEN) {
+  if (!process.env.AI_GATEWAY_API_KEY && !process.env.VERCEL_OIDC_TOKEN && !process.env.VERCEL) {
     await sql`UPDATE received_events SET summary_status = 'unavailable' WHERE event_id = ${event.eventId}`;
     return;
   }
