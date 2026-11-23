@@ -33,8 +33,17 @@ it('atomically merges only the supplied fields in Postgres, without a read/repla
   sql.mockResolvedValue([{ key: subscription.key }]);
   await store.update(subscription.key, { cursor: '42' });
   expect(sql).toHaveBeenCalledTimes(1);
-  expect(sql.mock.calls[0][0].join('?')).toContain('record = record || ?::jsonb');
-  expect(sql.mock.calls[0].slice(1)).toEqual(['{"cursor":"42"}', 'https://sender.example/api/mcp', subscription.key]);
+  expect(sql.mock.calls[0][0].join('?')).toContain('record = record ||');
+  expect(sql.mock.calls[0].slice(1)).toEqual([null, '{"cursor":"42"}', '{"cursor":"42"}', 'https://sender.example/api/mcp', subscription.key]);
+});
+it('atomically preserves an already-active record when the SDK marks a refresh pending', async () => {
+  sql.mockResolvedValue([{ key: subscription.key }]);
+  await store.update(subscription.key, { status: 'pending' });
+  expect(sql).toHaveBeenCalledOnce();
+  const query = sql.mock.calls[0][0].join('?');
+  expect(query).toContain("record->>'status' = 'active' AND record->>'id' IS NOT NULL");
+  expect(query).toContain("::jsonb - 'status'");
+  expect(sql.mock.calls[0].slice(1)).toEqual(['pending', '{"status":"pending"}', '{"status":"pending"}', 'https://sender.example/api/mcp', subscription.key]);
 });
 it('rejects updates to missing records and propagates database failures', async () => {
   sql.mockResolvedValue([]);

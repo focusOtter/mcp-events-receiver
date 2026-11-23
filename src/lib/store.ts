@@ -16,7 +16,10 @@ export function createPostgresStore(scope: string, sql = db()): Experimental_MCP
         ON CONFLICT(scope, key) DO UPDATE SET record = EXCLUDED.record, updated_at = now()`;
     },
     async update(key, patch) {
-      const rows = await sql`UPDATE mcp_subscriptions SET record = record || ${JSON.stringify(patch)}::jsonb, updated_at = now()
+      const rows = await sql`UPDATE mcp_subscriptions SET record = record ||
+        CASE WHEN record->>'status' = 'active' AND record->>'id' IS NOT NULL AND ${patch.status ?? null} = 'pending'
+          THEN ${JSON.stringify(patch)}::jsonb - 'status'
+          ELSE ${JSON.stringify(patch)}::jsonb END, updated_at = now()
         WHERE scope = ${scope} AND key = ${key} RETURNING key`;
       if (!rows.length) throw new Error('Unknown subscription');
     },
