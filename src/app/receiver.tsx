@@ -3,6 +3,8 @@
 import { useActionState, useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { Feed } from '@/lib/feed-types';
+import type { FeedMessage } from '@/lib/stream';
+import { applyFeedMessage } from '@/lib/feed-updates';
 import { subscriptionAction } from './actions';
 
 function Signal({ className = '' }: { className?: string }) {
@@ -17,23 +19,20 @@ function date(value: unknown, options: Intl.DateTimeFormatOptions) {
 export function Receiver({ initial, initialError = '' }: { initial: Feed; initialError?: string }) {
   const [feed, setFeed] = useState(initial);
   const [error, setError] = useState(initialError);
+  const [connected, setConnected] = useState(false);
   const [state, action, pending] = useActionState(subscriptionAction, {});
   useEffect(() => {
-    let stopped = false;
-    const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout>;
-    async function poll() {
-      try {
-        const response = await fetch('/api/feed', { cache: 'no-store', signal: controller.signal });
-        if (!response.ok) throw new Error('Feed unavailable');
-        const next: Feed = await response.json();
-        if (!stopped) { setFeed(next); setError(''); }
-      } catch {
-        if (!stopped) setError('Connection interrupted. Your events are safe; retrying…');
-      } finally { if (!stopped) timer = setTimeout(poll, 1500); }
-    }
-    void poll();
-    return () => { stopped = true; controller.abort(); clearTimeout(timer); };
+    const source = new EventSource('/api/stream');
+    source.onopen = () => { setConnected(true); setError(''); };
+    source.onmessage = event => {
+      const message: FeedMessage = JSON.parse(event.data);
+      setFeed(current => applyFeedMessage(current, message));
+    };
+    source.onerror = () => {
+      setConnected(false);
+      setError('Connection interrupted. Your events are safe; reconnecting…');
+    };
+    return () => source.close();
   }, []);
   const active = feed.subscriptions.filter(s => s.status === 'active' && (!s.refreshBefore || Date.parse(s.refreshBefore) > feed.asOf)).length;
   return <>
@@ -51,7 +50,7 @@ export function Receiver({ initial, initialError = '' }: { initial: Feed; initia
         })}</section>
         <div className="under-the-hood"><h2>Good data. A friendly voice.</h2><p>Events are saved first. The AI SDK adds a short summary through AI Gateway when available. No summary? No lost event.</p><code>@ai-sdk/mcp 2.0.103</code></div>
       </aside>
-      <section className="feed" aria-label="Received event feed"><div className="feed-heading"><div><h2>The latest tail wags.</h2><p>A live feed from the grooming club.</p></div><span className={error ? 'live offline' : 'live'}><i className="dot" />{error ? 'Reconnecting' : 'Live · 1.5s'}</span></div>
+      <section className="feed" aria-label="Received event feed"><div className="feed-heading"><div><h2>The latest tail wags.</h2><p>A live feed from the grooming club.</p></div><span className={connected ? 'live' : 'live offline'}><i className="dot" />{connected ? 'Live · streaming' : 'Reconnecting…'}</span></div>
         <div className="feed-meta"><span>{feed.total} event{feed.total !== 1 ? 's' : ''} received</span><span>Newest first · all times UTC</span></div>
         {error && <p role="status" className="feed-error">{error}</p>}
         {feed.events.length === 0 ? <div className="empty"><Signal /><h3>Ready when the good dogs are.</h3><p>Subscribe, then book an appointment on site 1.<br />The signed event will appear right here.</p><div className="empty-envelope"><code>appointment.booked</code><span>Waiting for the first arrival</span></div></div> : <div className="event-list">{feed.events.map(event => {
