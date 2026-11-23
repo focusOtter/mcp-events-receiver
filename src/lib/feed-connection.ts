@@ -9,8 +9,15 @@ export function connectFeed(onMessage: (message: FeedMessage) => void, onConnect
   function close() {
     if (!source) return;
     source.onopen = source.onmessage = source.onerror = null;
+    source.removeEventListener('rollover', rollover);
     source.close();
     source = undefined;
+  }
+  function rollover() {
+    if (stopped) return;
+    close();
+    onConnection(false);
+    connect();
   }
   function retry() {
     if (stopped) return;
@@ -29,6 +36,7 @@ export function connectFeed(onMessage: (message: FeedMessage) => void, onConnect
         onMessage(JSON.parse(event.data));
       };
       source.onerror = retry;
+      source.addEventListener('rollover', rollover);
     } catch { retry(); }
   }
   connect();
