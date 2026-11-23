@@ -19,6 +19,8 @@ export function createPostgresStore(scope: string, sql = db()): Experimental_MCP
       const rows = await sql`UPDATE mcp_subscriptions SET record = record ||
         CASE WHEN record->>'status' = 'active' AND record->>'id' IS NOT NULL AND ${patch.status ?? null} = 'pending'
           THEN ${JSON.stringify(patch)}::jsonb - 'status'
+          WHEN record->>'status' = 'active' AND ${patch.status ?? null} = 'active'
+          THEN ${JSON.stringify(patch)}::jsonb - 'cursor'
           ELSE ${JSON.stringify(patch)}::jsonb END, updated_at = now()
         WHERE scope = ${scope} AND key = ${key} RETURNING key`;
       if (!rows.length) throw new Error('Unknown subscription');
