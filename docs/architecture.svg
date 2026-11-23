@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-labelledby="architecture-title architecture-desc" id="architecture-root">
+<title id="architecture-title">Otter Paws MCP Events architecture</title>
+<desc id="architecture-desc">A browser books grooming appointments; the booking server verifies subscriptions and signs webhooks for a durable receiver, whose feed polls Neon and adds optional AI Gateway summaries after persistence.</desc>
+<defs>
+      <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;family=Noto+Serif:ital@0;1&amp;family=Noto+Sans+KR:wght@400;500;600&amp;family=Noto+Serif+KR:wght@400&amp;family=Noto+Sans+TC:wght@400;500;600&amp;family=Noto+Serif+TC:wght@400&amp;display=swap');
+      #architecture-root { color: #263e34; }
+      #architecture-root .diagram-container { width: 100%; overflow-x: auto; }
+      #architecture-root .title { font: 40px Georgia, serif; fill: #263e34; }
+      #architecture-root .name { font-size: 20px; font-weight: 600; fill: #263e34; }
+      #architecture-root .body { font-size: 16px; fill: #5e6d61; }
+      #architecture-root .mono { font-family: 'Geist Mono', monospace; font-size: 13px; fill: #365b43; }
+      #architecture-root .node { fill: #fffef9; stroke: #5e6d61; stroke-width: 1.5; }
+      #architecture-root .focus { fill: #edf1e5; stroke: #365b43; stroke-width: 2; }
+      #architecture-root .edge { fill: none; stroke: #5e6d61; stroke-width: 2; marker-end: url(#architecture-arrow); }
+      #architecture-root .link { fill: none; stroke: #365b43; stroke-width: 2; marker-end: url(#architecture-arrow-link); }
+      #architecture-root .optional { stroke-dasharray: 5 4; }
+      @media print {
+#architecture-root .diagram-container { overflow: visible; }
+}</style>
+<marker id="architecture-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#5e6d61"/></marker>
+<marker id="architecture-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#365b43"/></marker>
+<marker id="architecture-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#365b43"/></marker>
+</defs>
+<rect width="1280" height="720" fill="#fbfaf4"/>
+<text x="48" y="48" class="eyebrow">OTTER PAWS / TWO SITES, ONE EVENT FLOW</text>
+<text x="48" y="100" class="title">Good dogs. Signed events. A live listening room.</text>
+<text x="48" y="136" class="body">Next.js on Vercel · MCP Events / SEP-3415 demo · AI SDK 2.0.103</text>
+<rect x="280" y="236" width="296" height="372" rx="8" fill="#263e34" fill-opacity="0.02" stroke="#d9dfd1"/>
+<rect x="720" y="236" width="296" height="372" rx="8" fill="#263e34" fill-opacity="0.02" stroke="#d9dfd1"/>
+<text x="304" y="260" class="eyebrow">SITE 1 / SENDER</text>
+<text x="744" y="260" class="eyebrow">SITE 2 / RECEIVER</text>
+<path d="M 240,336 H 304" class="edge"/>
+<path d="M 552,336 H 744" class="link"/>
+<path d="M 960,280 V 196 Q 960,188 952,188 H 436 Q 428,188 428,196 V 280" class="link optional"/>
+<path d="M 428,392 V 480" class="edge"/>
+<path d="M 868,392 V 480" class="edge"/>
+<path d="M 992,504 H 1136 Q 1144,504 1144,496 V 392" class="edge"/>
+<path d="M 992,552 H 1024 Q 1032,552 1032,560 V 580 Q 1032,588 1040,588 H 1056" class="edge optional"/>
+<rect x="488" y="156" width="324" height="24" fill="#fbfaf4"/>
+<text x="650" y="173" text-anchor="middle" class="mono">list → subscribe · verify challenge</text>
+<rect x="560" y="304" width="176" height="24" fill="#fbfaf4"/>
+<text x="648" y="321" text-anchor="middle" class="mono">HMAC signed webhook</text>
+<rect x="444" y="420" width="108" height="24" fill="#fbfaf4"/>
+<text x="452" y="437" class="mono">atomic write</text>
+<rect x="884" y="420" width="104" height="24" fill="#fbfaf4"/>
+<text x="892" y="437" class="mono">dedupe by ID</text>
+<rect x="1056" y="472" width="176" height="24" fill="#fbfaf4"/>
+<text x="1144" y="489" text-anchor="middle" class="mono">poll every 1.5s</text>
+<rect x="48" y="280" width="192" height="112" rx="8" class="node"/>
+<text x="72" y="316" class="name">Browser</text>
+<text x="72" y="344" class="body">Book or cancel</text>
+<text x="72" y="368" class="mono">UI / MCP tools</text>
+<rect x="304" y="280" width="248" height="112" rx="8" class="focus"/>
+<text x="328" y="316" class="name">Booking site</text>
+<text x="328" y="344" class="body">Appointments + events</text>
+<text x="328" y="368" class="mono">POST /api/mcp</text>
+<rect x="304" y="480" width="248" height="96" rx="8" class="node"/>
+<text x="328" y="516" class="name">Neon · dog_booking</text>
+<text x="328" y="544" class="mono">events · delivery attempts</text>
+<rect x="744" y="280" width="248" height="112" rx="8" class="focus"/>
+<text x="768" y="316" class="name">Webhook receiver</text>
+<text x="768" y="344" class="body">AI SDK verifies signatures</text>
+<text x="768" y="368" class="mono">POST /api/mcp-events</text>
+<rect x="744" y="480" width="248" height="96" rx="8" class="node"/>
+<text x="768" y="516" class="name">Neon · receiver</text>
+<text x="768" y="544" class="mono">subscriptions · events</text>
+<rect x="1056" y="280" width="176" height="112" rx="8" class="node"/>
+<text x="1080" y="316" class="name">Live feed</text>
+<text x="1080" y="344" class="body">JSON + AI notes</text>
+<text x="1080" y="368" class="mono">GET /api/feed</text>
+<rect x="1056" y="548" width="176" height="84" rx="8" class="node" stroke-dasharray="5 4"/>
+<text x="1072" y="580" class="name">AI Gateway</text>
+<text x="1072" y="608" class="mono">after() → summary</text>
+<path d="M 48,660 H 1232" stroke="#d9dfd1"/>
+<text x="48" y="692" class="body">Solid: durable event path</text>
+<text x="360" y="692" class="body">Dashed: setup / optional AI</text>
+<text x="744" y="692" class="body">Save first. Summarize after. Never lose an event to AI.</text>
+</svg>
