@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { listenerClient } from '../src/lib/stream';
+import { listenerClient, readChanges } from '../src/lib/stream';
 
 const listener = listenerClient();
 const writer = listenerClient();
@@ -40,7 +40,10 @@ try {
   await notificationFor(() => writer.query('DELETE FROM mcp_subscriptions WHERE scope=$1', [scope]), 'subscriptions');
   assert(BigInt(summary) > BigInt(first));
   assert.equal(notifications.length, 6);
+  const changes = await readChanges('0');
+  assert(changes.every((row, index) => index === 0 || BigInt(row.cursor) > BigInt(changes[index - 1].cursor)), 'Catch-up must sort the numeric column, not its text alias');
   console.log('PASS direct Neon WebSocket LISTEN: insert, summary success/failure, subscription set/update/delete; rollback emits no durable change.');
+  console.log('PASS real Postgres catch-up cursors are strictly numerically increasing.');
 } finally {
   await writer.query('ROLLBACK');
   await writer.query('DELETE FROM received_events WHERE event_id=$1', [eventId]);

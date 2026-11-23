@@ -30,7 +30,7 @@ export function listenerClient() {
 
 export async function readChanges(after: string, sql = db()) {
   return sql`SELECT cursor::text, kind, entity_id FROM receiver_feed_changes
-    WHERE cursor > ${after}::bigint AND (scope = '' OR scope = ${serverUrl()}) ORDER BY cursor LIMIT 100`;
+    WHERE cursor > ${after}::bigint AND (scope = '' OR scope = ${serverUrl()}) ORDER BY receiver_feed_changes.cursor LIMIT 100`;
 }
 
 export async function loadChange(kind: string, id: string, sql = db()): Promise<FeedMessage | undefined> {

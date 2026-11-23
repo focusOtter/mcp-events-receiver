@@ -38,7 +38,7 @@ it('formats safe SSE frames and upserts summaries without duplicates or changing
 it('queries only changes strictly after the cursor, ordered, scoped and bounded', async () => {
   await readChanges('42');
   expect(mocks.sql.mock.calls[0][0].join('?')).toContain('cursor > ?::bigint');
-  expect(mocks.sql.mock.calls[0][0].join('?')).toContain('ORDER BY cursor LIMIT 100');
+  expect(mocks.sql.mock.calls[0][0].join('?')).toContain('ORDER BY receiver_feed_changes.cursor LIMIT 100');
   expect(mocks.sql.mock.calls[0].slice(1)).toEqual(['42', 'https://sender.example/api/mcp']);
 });
 it('loads current event rows and only public subscription fields; handles removed rows and DB errors', async () => {
